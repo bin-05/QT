@@ -81,3 +81,64 @@ void my_weather::onGetWeather()
     mNetRequest->setHeader(QNetworkRequest::UserAgentHeader,"RT-Thread ART");
     mNetManager->get(*mNetRequest);
 }
+
+void my_weather::ProvinceSlot(const QString &ProvinceName)
+{
+   // qDebug()<<ProvinceName<<"22222222222";
+    choose=3;
+    caonima->get(QNetworkRequest(QUrl("http://www.webxml.com.cn/WebServices/WeatherWebService.asmx/getSupportCity?byProvinceName=" + ProvinceName)));
+    evenLoop.exec();
+}
+void my_weather::replyFinished(QNetworkReply *reply)
+{
+        QTextCodec *codec = QTextCodec::codecForName("UTF-8");
+        QString all = codec->toUnicode(reply->readAll());
+        QXmlStreamReader reader(all);
+        //提取城市名字
+        while (!reader.atEnd())
+        {
+            reader.readNext();
+            if (reader.isStartElement())
+            {
+                if (reader.name() == "string")
+                {
+                    List.append(reader.readElementText());
+                }
+            }
+        }
+
+        //刷新省份下拉框
+        switch(choose)
+        {
+        case 1:
+                for (QStringList::const_iterator citer = List.constBegin(); citer != List.constEnd(); citer++)
+                        {
+                            ui->comboBoxS->addItem(*citer);
+                        }
+                        ui->comboBoxS->setCurrentIndex(0);//默认显示第一个
+
+                        break;
+         //刷新城市下拉框
+        case 2:
+            for (QStringList::const_iterator citer = List.constBegin(); citer != List.constEnd(); citer++)
+                        {
+                            QString str = citer->left(citer->indexOf(QChar(' ')));
+                            ui->comboBoxCity->addItem(str);
+                        }
+                        ui->comboBoxCity->setCurrentIndex(0);//默认第一个
+                        List.clear();
+                        break;
+         //刷新城市下拉框
+        case 3:
+            ui->comboBoxCity->clear();
+                        for (QStringList::const_iterator citer = List.constBegin(); citer != List.constEnd(); citer++)
+                        {
+                            QString str = citer->left(citer->indexOf(QChar(' ')));
+                            ui->comboBoxCity->addItem(str);
+                        }
+                        ui->comboBoxCity->setCurrentIndex(0);//默认显示第一个
+                        List.clear();
+                        break;
+
+        }
+}
