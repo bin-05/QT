@@ -21,6 +21,10 @@
 //#include <QXmlQuery>
 #include <QFile>
 
+#define SPAN_INDEX 3 // 温度曲线间隔指数
+#define ORIGIN_SIZE 3 // 温度曲线原点大小
+#define TEMPERATURE_STARTING_COORDINATE 45 // 高温平均值起始坐标
+
 my_weather::my_weather(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::my_weather)
@@ -81,7 +85,6 @@ void my_weather::onGetWeather()
     mNetRequest->setHeader(QNetworkRequest::UserAgentHeader,"RT-Thread ART");
     mNetManager->get(*mNetRequest);
 }
-
 void my_weather::ProvinceSlot(const QString &ProvinceName)
 {
    // qDebug()<<ProvinceName<<"22222222222";
@@ -140,6 +143,8 @@ void my_weather::replyFinished(QNetworkReply *reply)
                         List.clear();
                         break;
 
+
+
         }
 }
 
@@ -194,7 +199,6 @@ void my_weather::analyWeatherXML(QByteArray xml)
     ui->textEdit_6->clear();
     ui->textEdit_6->append(JsonObj2String(day4));
 }
-
 QString my_weather::JsonObj2String(const QJsonObject jsonObj)
 {
     QString weather;
@@ -353,3 +357,82 @@ char* my_weather::fetchIPAddress()
     memcpy(&addr,phe->h_addr_list[0],sizeof(struct in_addr));
     return inet_ntoa(addr);
 }
+
+/* 温度曲线绘制 */
+void my_weather::paintCurve()
+{
+    QPainter painter(ui->curveLb);
+    painter.setRenderHint(QPainter::Antialiasing, true); // 反锯齿
+
+    // 将温度转换为int类型，并计算平均值，平均值作为curveLb曲线的参考值，参考Y坐标为45
+    int tempTotal = 0;
+    int high[6] = {};
+    int low[6] = {};
+
+    QString h, l;
+    for (int i = 0; i < 6; i++)
+    {
+        h = forecast[i].high.split(" ").at(1);
+        h = h.left(h.length() - 1);
+        high[i] = (int)(h.toDouble());
+        tempTotal += high[i];
+
+        l = forecast[i].low.split(" ").at(1);
+        l = l.left(h.length() - 1);
+        low[i] = (int)(l.toDouble());
+    }
+    int tempAverage = (int)(tempTotal / 6); // 最高温平均值
+
+    // 算出温度对应坐标
+    int pointX[6] = {35, 103, 172, 241, 310, 379}; // 点的X坐标
+    int pointHY[6] = {0};
+    int pointLY[6] = {0};
+    for (int i = 0; i < 6; i++)
+    {
+        pointHY[i] = TEMPERATURE_STARTING_COORDINATE - ((high[i] - tempAverage) * SPAN_INDEX);
+        pointLY[i] = TEMPERATURE_STARTING_COORDINATE + ((tempAverage - low[i]) * SPAN_INDEX);
+    }
+
+    QPen pen = painter.pen();
+    pen.setWidth(1);
+
+    // 高温曲线绘制
+    painter.save();
+    pen.setColor(QColor(255, 170, 0));
+    pen.setStyle(Qt::DotLine);
+    painter.setPen(pen);
+    painter.setBrush(QColor(255, 170, 0));
+    painter.drawEllipse(QPoint(pointX[0], pointHY[0]), ORIGIN_SIZE, ORIGIN_SIZE);
+    painter.drawEllipse(QPoint(pointX[1], pointHY[1]), ORIGIN_SIZE, ORIGIN_SIZE);
+    painter.drawLine(pointX[0], pointHY[0], pointX[1], pointHY[1]);
+
+    pen.setStyle(Qt::SolidLine);
+    pen.setWidth(1);
+    painter.setPen(pen);
+
+    for (int i = 1; i < 5; i++)
+    {
+        painter.drawEllipse(QPoint(pointX[i+1], pointHY[i+1]), ORIGIN_SIZE, ORIGIN_SIZE);
+        painter.drawLine(pointX[i], pointHY[i], pointX[i+1], pointHY[i+1]);
+    }
+    painter.restore();
+
+    // 低温曲线绘制
+    pen.setColor(QColor(0, 255, 255));
+    pen.setStyle(Qt::DotLine);
+    painter.setPen(pen);
+    painter.setBrush(QColor(0, 255, 255));
+    painter.drawEllipse(QPoint(pointX[0], pointLY[0]), ORIGIN_SIZE, ORIGIN_SIZE);
+    painter.drawEllipse(QPoint(pointX[1], pointLY[1]), ORIGIN_SIZE, ORIGIN_SIZE);
+    painter.drawLine(pointX[0], pointLY[0], pointX[1], pointLY[1]);
+
+    pen.setColor(QColor(0, 255, 255));
+    pen.setStyle(Qt::SolidLine);
+    painter.setPen(pen);
+    for (int i = 1; i < 5; i++)
+    {
+        painter.drawEllipse(QPoint(pointX[i+1], pointLY[i+1]), ORIGIN_SIZE, ORIGIN_SIZE);
+        painter.drawLine(pointX[i], pointLY[i], pointX[i+1], pointLY[i+1]);
+    }
+}
+
