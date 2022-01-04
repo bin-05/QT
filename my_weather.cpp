@@ -212,3 +212,144 @@ QString my_weather::JsonObj2String(const QJsonObject jsonObj)
     return weather;
 
 }
+void my_weather::Init()
+{
+    choose=1;
+    //获取所有省份
+    caonima->get(QNetworkRequest(QUrl("http://www.webxml.com.cn/WebServices/WeatherWebService.asmx/getSupportProvince?")));
+
+    connect(caonima,SIGNAL(finished(QNetworkReply*)),this,SLOT(replyFinished(QNetworkReply*)));
+    connect(caonima, &QNetworkAccessManager::finished, &evenLoop, &QEventLoop::quit);
+    evenLoop.exec();
+
+       // choose =2;//初始化城市列表（代號：2）
+        //QString City = List.at(0);//默認省份列表第一項（直轄市）爲默認省份
+        List.clear();
+       // caonima->get(QNetworkRequest(QUrl("http://www.webxml.com.cn/WebServices/WeatherWebService.asmx/getSupportCity?byProvinceName=" + City)));//發送請求
+
+        //---局部事件循環
+        //connect(caonima, &QNetworkAccessManager::finished, &evenLoop, &QEventLoop::quit);
+        //evenLoop.exec();
+}
+//QString my_weather::getIPAddress()
+//{
+//    QString ipAddress;
+//    QList<QHostAddress> ipAddressesList = QNetworkInterface::allAddresses();
+//    for (int i = 0; i < ipAddressesList.size(); ++i)
+//    {
+//        if (ipAddressesList.at(i) != QHostAddress::LocalHost &&  ipAddressesList.at(i).toIPv4Address())
+//        {
+//            ipAddress = ipAddressesList.at(i).toString();
+//            break;
+//        }
+//    }
+//    if (ipAddress.isEmpty())
+//        ipAddress = QHostAddress(QHostAddress::LocalHost).toString();
+//    return ipAddress;
+//}
+QString my_weather::getIpInfo()
+{
+    //mac地址
+    QList<QNetworkInterface> list = QNetworkInterface::allInterfaces();
+    QString info = QString::fromLocal8Bit("IP:")+QString::fromLocal8Bit(";MAC:");;
+    if(list.size() != 0)//内网ip
+    {
+        info= "9999,9999,9999,9999";
+       QString netIp = GetNetIP(GetHtml("http://whois.pconline.com.cn/"));//公网ip
+        //QHostInfo类作用，获取主机名，也可以通过主机名来查找IP地址，或者通过IP地址来反向查找主机名。
+        char* ip = getIP();
+        info = "IP:"+QString::fromLatin1(ip)+";MAC:"+list[0].hardwareAddress();
+    }
+    qDebug()<<"IP="<<IPAddress;
+    return info;
+}
+
+//外网的获取方法，通过爬网页来获取外网IP
+QString my_weather::GetHtml(QString url)//网页源代码
+{
+    QNetworkAccessManager *manager = new QNetworkAccessManager();
+    QNetworkReply *reply = manager->get(QNetworkRequest(QUrl(url)));
+//    QTextCodec *codec = QTextCodec::codecForName("UTF-8");
+//    QString all = codec->toUnicode(reply->readAll());
+//    QXmlStreamReader reader(all);
+    QByteArray responseData;
+    QEventLoop eventLoop;
+    QObject::connect(manager, SIGNAL(finished(QNetworkReply *)), &eventLoop, SLOT(quit()));
+    eventLoop.exec();
+    responseData = reply->readAll();
+    qDebug()<<"__________________\n"<<responseData<<"_____________________\n";
+    return QString(responseData);
+
+}
+QString my_weather::GetNetIP(QString webCode)//公网ip
+{
+//    qDebug()<<"________"<<webCode;
+//    QString queryStr;
+//    QXmlQuery query;
+//    QString sXmlPath="F:\\qtfile\\my_weather\\xpath.xml";
+//    QFile db(sXmlPath);
+
+//    QString sfist = "工作目录";
+//    QString ssecond = "工作目录";
+//    if ( ! db.exists()) {
+//            //errMsg = "Xml文件未找到！";
+//           // return ;
+//        qDebug()<<"文件错误1";
+//        }
+
+//        if (!db.open(QIODevice::ReadOnly | QIODevice::Text)){
+//            //errMsg = "文件打不开！";
+//            qDebug()<<"文件错误2";
+//            //return ;
+//        }
+////    QByteArray byte=webCode.toUtf8();
+////    const char *utf8=byte.data();
+//    query.setFocus(&db);
+//     qDebug()<<"查询shuju有误";
+//    query.setQuery("tree[@id='0']/item[@text='"+sfist+"']/item[@text='"+ssecond+"']/userdata[@name='value']");
+//    if(!query.isValid())
+//    {
+//        qDebug()<<"查询参数有误";
+//        //return;
+//    }
+//    query.evaluateTo(&queryStr);
+//    qDebug()<<"字符串是："<<queryStr;
+    QString web = webCode.replace(" ", "");
+    web = web.replace("\r", "");
+    web = web.replace("\n", "");
+    QStringList list = web.split("<br/>");
+    if(list.size() < 4)
+        return "0.0.0.0";
+    QString tar = list[3];
+    QStringList ip = tar.split("=");
+    return ip[1];
+}
+//内网获取方法
+char* my_weather::getIP()
+{
+    WSAData wsaData;
+    if(WSAStartup(MAKEWORD(1,1),&wsaData)!=0)//需要添加库WS2_32.lib，如果不明白什么意思，参见http://blog.csdn.net/bolike/article/details/7584727
+    {
+        return NULL;
+    }
+
+    char *ipAddress = fetchIPAddress();
+    WSACleanup();
+    return ipAddress;
+}
+char* my_weather::fetchIPAddress()
+{
+    char host_name[225];
+    if(gethostname(host_name,sizeof(host_name)) == SOCKET_ERROR)
+    {
+        qDebug()<<"Error "<<WSAGetLastError()<<" when getting local host name."<<endl;
+    }
+    struct hostent *phe = gethostbyname(host_name);
+    if(phe == 0)
+    {
+        qDebug()<<"get host entry error";
+    }
+    struct in_addr addr;
+    memcpy(&addr,phe->h_addr_list[0],sizeof(struct in_addr));
+    return inet_ntoa(addr);
+}
