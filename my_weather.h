@@ -22,23 +22,38 @@ private slots:
     void onGetWeather();
     void onReplyFinished(QNetworkReply *reply);
     void ProvinceSlot(const QString &);
+    void replyFinished(QNetworkReply *reply);
+    void paintCurve();
+
+    void on_curveLb_linkActivated(const QString &link);
 
 private:
     void analyWeatherXML(QByteArray xml);
     QString JsonObj2String(const QJsonObject jsonObj);
     void Init();
+    QString getIPAddress();
+    QString getIpInfo();
     QString GetHtml(QString url);
+    QString GetNetIP( QString webCode);
+    char * getIP();
+    char *fetchIPAddress();
+
 
 private:
     Ui::my_weather *ui;
     QNetworkAccessManager *mNetManager;
     QNetworkAccessManager *caonima;
+    QNetworkRequest *mNetRequest;
     bool bPressFlag;
     QPoint dragPosition;
     bool gIndex;
     QString weatherStr;
     QString cityStr;
     int choose;
+    QEventLoop evenLoop;
+    QStringList List;
+    QString IPAddress;
+   // QString netIp;
 
 };
 
