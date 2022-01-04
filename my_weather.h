@@ -10,6 +10,15 @@ namespace Ui {
 class my_weather;
 }
 
+struct Forecast
+{
+    QString date;
+    QString high;
+    QString low;
+    QString aqi;
+    QString type;
+};
+
 class my_weather : public QMainWindow
 {
     Q_OBJECT
@@ -24,6 +33,8 @@ private slots:
     void ProvinceSlot(const QString &);
     void replyFinished(QNetworkReply *reply);
     void paintCurve();
+
+    void on_curveLb_linkActivated(const QString &link);
 
 private:
     void analyWeatherXML(QByteArray xml);
@@ -51,8 +62,9 @@ private:
     QEventLoop evenLoop;
     QStringList List;
     QString IPAddress;
-   // QString netIp;
     Forecast forecast[6];
+   // QString netIp;
+
 };
 
 #endif // MY_WEATHER_H
