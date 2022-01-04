@@ -54,7 +54,7 @@ private:
     QStringList List;
     QString IPAddress;
    // QString netIp;
-
+    Forecast forecast[6];
 };
 
 #endif // MY_WEATHER_H
