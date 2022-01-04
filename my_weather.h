@@ -25,8 +25,6 @@ private slots:
     void replyFinished(QNetworkReply *reply);
     void paintCurve();
 
-    void on_curveLb_linkActivated(const QString &link);
-
 private:
     void analyWeatherXML(QByteArray xml);
     QString JsonObj2String(const QJsonObject jsonObj);
