@@ -142,3 +142,55 @@ void my_weather::replyFinished(QNetworkReply *reply)
 
         }
 }
+
+void my_weather::onReplyFinished(QNetworkReply *reply)
+{
+   // qDebug()<<QTime::currentTime().toString();
+    QByteArray weather=reply->readAll();
+    if(!weather.isEmpty())
+    {
+        analyWeatherXML(weather);
+    }
+    reply->deleteLater();
+
+}
+void my_weather::analyWeatherXML(QByteArray xml)
+{
+    //如果数据为空 返回
+    if(xml.isEmpty())
+    {
+        return;
+    }
+    //qDebug()<<xml.data();
+    //json 解析数据 并显示在 textedit上
+    QJsonParseError err;
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(xml,&err);
+    QJsonObject jsonObj= jsonDoc.object().value("data").toObject();
+
+    QJsonObject yesterday = jsonObj.value("yesterday").toObject(); //昨天
+    ui->textEdit->clear();
+    ui->textEdit->append(JsonObj2String(yesterday));
+
+    QJsonArray forecast = jsonObj.value("forecast").toArray();
+    QJsonObject day0 = forecast[0].toObject(); //今天
+    ui->textEdit_2->clear();
+    ui->textEdit_2->append(JsonObj2String(day0));
+    ui->textEdit_today->clear();
+    ui->textEdit_today->append(JsonObj2String(day0));
+
+    QJsonObject day1 = forecast[1].toObject(); //明天
+    ui->textEdit_3->clear();
+    ui->textEdit_3->append(JsonObj2String(day1));
+
+    QJsonObject day2 = forecast[2].toObject();
+    ui->textEdit_4->clear();
+    ui->textEdit_4->append(JsonObj2String(day2));
+
+    QJsonObject day3 = forecast[3].toObject();
+    ui->textEdit_5->clear();
+    ui->textEdit_5->append(JsonObj2String(day3));
+
+    QJsonObject day4 = forecast[4].toObject();
+    ui->textEdit_6->clear();
+    ui->textEdit_6->append(JsonObj2String(day4));
+}
