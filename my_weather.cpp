@@ -194,3 +194,21 @@ void my_weather::analyWeatherXML(QByteArray xml)
     ui->textEdit_6->clear();
     ui->textEdit_6->append(JsonObj2String(day4));
 }
+
+QString my_weather::JsonObj2String(const QJsonObject jsonObj)
+{
+    QString weather;
+    if(!jsonObj.isEmpty())
+    {
+        weather += jsonObj.value("date").toString()          + "\n";
+        if(!jsonObj.value("fx").toString().isEmpty())
+            weather += jsonObj.value("fx").toString()        + "\n";
+        else
+            weather += jsonObj.value("fengxiang").toString() + "\n";
+        weather += jsonObj.value("high").toString()          + "\n";
+        weather += jsonObj.value("low").toString()           + "\n";
+        weather += jsonObj.value("type").toString();
+    }
+    return weather;
+
+}
